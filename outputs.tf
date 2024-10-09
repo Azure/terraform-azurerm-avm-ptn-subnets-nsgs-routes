@@ -1,6 +1,14 @@
-output "private_endpoints" {
-  description = <<DESCRIPTION
-  A map of the private endpoints created.
-  DESCRIPTION
-  value       = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups : azurerm_private_endpoint.this_unmanaged_dns_zone_groups
+output "network_security_groups" {
+  description = "A map of all network security groups created."
+  value       = module.network_security_groups
+}
+
+output "route_tables" {
+  description = "A map of all route tables created."
+  value       = azurerm_route_table.this
+}
+
+output "subnets" {
+  description = "A map of all subnets created."
+  value       = module.subnets
 }
