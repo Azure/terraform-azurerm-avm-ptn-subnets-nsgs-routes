@@ -61,13 +61,13 @@ If it is set to false, then no telemetry will be collected.
 DESCRIPTION
 }
 
+# tflint-ignore: location
 variable "location" {
   type        = string
   default     = null
   description = "Azure region where the resource should be deployed.  Required if supplying NSGs or route tables."
 }
 
-# This is required for most resource modules
 variable "resource_group_name" {
   type        = string
   default     = null

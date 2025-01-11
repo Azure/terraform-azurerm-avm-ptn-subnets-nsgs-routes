@@ -23,10 +23,9 @@ module "subnets" {
 
   depends_on = [
     module.network_security_groups,
-    azurerm_route_table.this
+    module.route_tables,
   ]
 }
-
 
 module "network_security_groups" {
   for_each = var.network_security_groups
@@ -35,26 +34,22 @@ module "network_security_groups" {
   version             = "0.2.0"
   resource_group_name = var.resource_group_name
   name                = each.value.name
+  enable_telemetry    = var.enable_telemetry
   security_rules      = try(each.value.security_rules, {})
   location            = var.location
 }
 
-# replace with an AVM when available
-resource "azurerm_route_table" "this" {
+module "route_tables" {
   for_each = var.route_tables
 
-  location            = var.location
-  name                = each.value.name
-  resource_group_name = var.resource_group_name
-  tags                = each.value.tags
+  source                        = "Azure/avm-res-network-routetable/azurerm"
+  version                       = "0.3.1"
+  location                      = var.location
+  name                          = each.value.name
+  resource_group_name           = var.resource_group_name
+  bgp_route_propagation_enabled = try(!each.value.disable_bgp_route_propagation, true)
+  enable_telemetry              = var.enable_telemetry
+  tags                          = each.value.tags
 
-  dynamic "route" {
-    for_each = try(each.value.routes, {})
-    content {
-      address_prefix         = route.value.address_prefix
-      name                   = route.value.name
-      next_hop_in_ip_address = route.value.next_hop_in_ip_address
-      next_hop_type          = route.value.next_hop_type
-    }
-  }
+  routes = try(each.value.routes, {})
 }
