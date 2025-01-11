@@ -1,29 +1,55 @@
-# TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-resource "azurerm_resource_group" "TODO" {
-  location = var.location
-  name     = var.name # calling code must supply the name
-  tags     = var.tags
+module "subnets" {
+  for_each = local.subnets
+
+  source  = "Azure/avm-res-network-virtualnetwork/azurerm//modules/subnet"
+  version = "0.2.3"
+
+  virtual_network = {
+    resource_id = var.virtual_network_resource_id
+  }
+  name             = each.value.name
+  address_prefixes = each.value.address_prefixes
+
+  default_outbound_access_enabled               = try(each.value.default_outbound_access_enabled, false)
+  delegation                                    = try(each.value.delegation, null)
+  nat_gateway                                   = try(each.value.nat_gateway, null)
+  network_security_group                        = each.value.network_security_group
+  private_endpoint_network_policies             = coalesce(each.value.private_endpoint_network_policies, "Enabled")
+  private_link_service_network_policies_enabled = coalesce(each.value.private_link_service_network_policies_enabled, true)
+  role_assignments                              = try(each.value.role_assignments, {})
+  route_table                                   = each.value.route_table
+  service_endpoint_policies                     = try(each.value.service_endpoint_policies, null)
+  service_endpoints                             = try(each.value.service_endpoints, null)
+
+  depends_on = [
+    module.network_security_groups,
+    module.route_tables,
+  ]
 }
 
-# required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
-  count = var.lock != null ? 1 : 0
+module "network_security_groups" {
+  for_each = var.network_security_groups
 
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
-  scope      = azurerm_MY_RESOURCE.this.id # TODO: Replace with your azurerm resource name
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  source              = "Azure/avm-res-network-networksecuritygroup/azurerm"
+  version             = "0.2.0"
+  resource_group_name = var.resource_group_name
+  name                = each.value.name
+  enable_telemetry    = var.enable_telemetry
+  security_rules      = try(each.value.security_rules, {})
+  location            = var.location
 }
 
-resource "azurerm_role_assignment" "this" {
-  for_each = var.role_assignments
+module "route_tables" {
+  for_each = var.route_tables
 
-  principal_id                           = each.value.principal_id
-  scope                                  = azurerm_resource_group.TODO.id # TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+  source                        = "Azure/avm-res-network-routetable/azurerm"
+  version                       = "0.3.1"
+  location                      = var.location
+  name                          = each.value.name
+  resource_group_name           = var.resource_group_name
+  bgp_route_propagation_enabled = try(!each.value.disable_bgp_route_propagation, true)
+  enable_telemetry              = var.enable_telemetry
+  tags                          = each.value.tags
+
+  routes = try(each.value.routes, {})
 }
