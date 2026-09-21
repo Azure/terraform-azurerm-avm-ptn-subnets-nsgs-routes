@@ -6,5 +6,8 @@
   "owners": [
     "vamsi-boya"
   ],
-  "telemetryIdPrefix": "46d3xtrf.ptn.ee16b84"
+  "telemetryIdPrefix": "46d3xtrf.ptn.ee16b84",
+  "alternativeNames": [
+    "NSG"
+  ]
 }
